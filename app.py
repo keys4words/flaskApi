@@ -1,4 +1,4 @@
-from flask import Flask, g
+from flask import Flask, g, request, jsonify
 from database import get_db
 
 
@@ -13,17 +13,45 @@ def close_db(error):
 
 @app.route('/member', methods=['GET'])
 def get_members():
-    return 'This returns all the members'
+    db = get_db()
+    members_cur = db.execute('select * from members')
+    members = members_cur.fetchall()
+    res = []
+    for member in members:
+        member_dict = {}
+        member_dict['id'] = member['id']
+        member_dict['name'] = member['name']
+        member_dict['email'] = member['email']
+        member_dict['level'] = member['level']
+        res.append(member_dict)
+
+    return jsonify({'members': res})
 
 
 @app.route('/member/<int:member_id>', methods=['GET'])
 def get_member(member_id):
-    return 'Returns one member by ID'
+    db = get_db()
+    members_cur = db.execute('select * from members where id = ?', [member_id])
+    member = members_cur.fetchone()
+
+    return jsonify({'member': {'id': member['id'], 'name': member['name'], 'email': member['email'], 'level': member['level']}})
 
 
 @app.route('/member', methods=['POST'])
 def add_member():
-    return 'This adds a new member'
+    new_member_data = request.get_json()
+    name = new_member_data['name']
+    email = new_member_data['email']
+    level = new_member_data['level']
+
+    db = get_db()
+    db.execute('insert into members (name, email, level) values(?, ?, ?)', [name, email, level])
+    db.commit()
+
+    member_cur = db.execute('select * from members where name = ?', [name])
+    new_member = member_cur.fetchone()
+
+    return jsonify({'member': {'id': new_member['id'], 'name': new_member['name'], 'email': new_member['email'], 'level': new_member['level']}})
 
 
 @app.route('/member/<int:member_id>', methods=['PUT', 'PATCH'])
