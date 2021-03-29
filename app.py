@@ -28,6 +28,7 @@ def close_db(error):
 @protected
 def get_members():
     db = get_db()
+    
     members_cur = db.execute('select * from members')
     members = members_cur.fetchall()
     res = []
